@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import Plant from "@/components/Plant.jsx";
+import {
+  dailyActivityFingerprint,
+  dailyGoalsCatalogDigest,
+  formatDailyGoalsCatalogForPrompt,
+  formatHasanatCountsForPrompt,
+} from "@/lib/catalogGoals.js";
 import { fetchDailyBulletsFromGoal } from "@/lib/geminiDailyBullets.js";
 import { notifySincerityStorageChanged, SINCERITY_STORAGE_EVENT } from "@/lib/sincerityPlantStorage.js";
 import "./Home.css";
@@ -14,10 +20,11 @@ const LS_DAILY_BULLETS = "sincerity_home_daily_bullets_cache";
 
 /** @typedef {{ text: string; done: boolean }} DailyEntry */
 
-function normalizeDailyCache(raw, date, goal) {
+function normalizeDailyCache(raw, date, goal, catalogDigest, activityFingerprint) {
   try {
     const c = JSON.parse(raw);
     if (c?.date !== date || c?.goal !== goal) return null;
+    if (c?.catalogDigest !== catalogDigest || c?.activityFingerprint !== activityFingerprint) return null;
     if (Array.isArray(c.entries)) {
       const entries = c.entries
         .filter((e) => e && typeof e.text === "string")
@@ -165,17 +172,25 @@ export default function Home() {
 
     const date = todayYmd();
     const donationCount = parseJsonArray(LS_DONATIONS).length;
-    const hasanatCount = parseJsonArray(LS_HASANAT).length;
+    const hasanatEntries = parseJsonArray(LS_HASANAT);
+    const hasanatCount = hasanatEntries.length;
+    const catalogDigest = dailyGoalsCatalogDigest();
+    const activityFingerprint = dailyActivityFingerprint(donationCount, hasanatEntries);
+    const goalsCatalogBlock = formatDailyGoalsCatalogForPrompt();
+    const hasanatCountsBlock = formatHasanatCountsForPrompt(hasanatEntries);
 
     const raw = localStorage.getItem(LS_DAILY_BULLETS);
     if (raw) {
-      const cached = normalizeDailyCache(raw, date, goal);
+      const cached = normalizeDailyCache(raw, date, goal, catalogDigest, activityFingerprint);
       if (cached) {
         setDailyEntries(cached);
         try {
           const c = JSON.parse(raw);
           if (!Array.isArray(c.entries) && Array.isArray(c.items)) {
-            localStorage.setItem(LS_DAILY_BULLETS, JSON.stringify({ date, goal, entries: cached }));
+            localStorage.setItem(
+              LS_DAILY_BULLETS,
+              JSON.stringify({ date, goal, catalogDigest, activityFingerprint, entries: cached }),
+            );
           }
         } catch {
           /* ignore */
@@ -196,11 +211,16 @@ export default function Home() {
         const items = await fetchDailyBulletsFromGoal(apiKey, goal, ac.signal, {
           donationCount,
           hasanatCount,
+          goalsCatalogBlock,
+          hasanatCountsBlock,
         });
         if (ac.signal.aborted) return;
         const entries = items.map((text) => ({ text, done: false }));
         setDailyEntries(entries);
-        localStorage.setItem(LS_DAILY_BULLETS, JSON.stringify({ date, goal, entries }));
+        localStorage.setItem(
+          LS_DAILY_BULLETS,
+          JSON.stringify({ date, goal, catalogDigest, activityFingerprint, entries }),
+        );
       } catch (e) {
         if (ac.signal.aborted) return;
         setDailyEntries([]);
@@ -236,10 +256,17 @@ export default function Home() {
     setDailyEntries((prev) => {
       if (index < 0 || index >= prev.length) return prev;
       const next = prev.map((e, i) => (i === index ? { ...e, done: !e.done } : e));
-      const goal = readGoal().trim();
+      const g = readGoal().trim();
       const date = todayYmd();
+      const donationCount = parseJsonArray(LS_DONATIONS).length;
+      const hasanatEntries = parseJsonArray(LS_HASANAT);
+      const catalogDigest = dailyGoalsCatalogDigest();
+      const activityFingerprint = dailyActivityFingerprint(donationCount, hasanatEntries);
       try {
-        localStorage.setItem(LS_DAILY_BULLETS, JSON.stringify({ date, goal, entries: next }));
+        localStorage.setItem(
+          LS_DAILY_BULLETS,
+          JSON.stringify({ date, goal: g, catalogDigest, activityFingerprint, entries: next }),
+        );
       } catch {
         /* ignore quota */
       }
@@ -297,7 +324,16 @@ export default function Home() {
         {goal.trim() ? (
           <div className="home__daily" aria-live="polite">
             <h3 className="home__daily-label">Today</h3>
-            {dailyLoading ? <p className="home__daily-muted">Gathering small steps for you…</p> : null}
+            {dailyLoading ? (
+              <p className="home__daily-muted home__daily-ellipsis" aria-busy="true">
+                <span className="home__daily-ellipsis-dots" aria-hidden>
+                  <span className="home__daily-ellipsis-dot">.</span>
+                  <span className="home__daily-ellipsis-dot">.</span>
+                  <span className="home__daily-ellipsis-dot">.</span>
+                </span>
+                <span className="home__daily-sr-only">Updating today&apos;s steps</span>
+              </p>
+            ) : null}
             {!dailyLoading && dailyError ? <p className="home__daily-err">{dailyError}</p> : null}
             {!dailyLoading && !dailyError && dailyEntries.length >= 2 ? (
               <ul className="home__daily-list">

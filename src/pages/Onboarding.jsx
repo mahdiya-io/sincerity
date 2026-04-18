@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { fetchAndPersistCatalogGoals } from "@/lib/geminiCatalogGoals.js";
 import { notifySincerityStorageChanged } from "@/lib/sincerityPlantStorage.js";
 
 const LS_PATH = "sincerity_onboarding_path";
@@ -341,6 +342,7 @@ export default function Onboarding() {
     localStorage.removeItem("sincerity_password");
   }, []);
   const [loadingAi, setLoadingAi] = useState(false);
+  const [beginBusy, setBeginBusy] = useState(false);
   const [aiError, setAiError] = useState("");
   /** Which suggestion row is expanded (`sug-0` …); null = none. */
   const [openSuggestionId, setOpenSuggestionId] = useState(null);
@@ -441,8 +443,25 @@ export default function Onboarding() {
     }
   };
 
-  const onBegin = () => {
+  const onBegin = async () => {
     const g = goal.trim();
+    const key = import.meta.env.VITE_GEMINI_API_KEY;
+    const keyTrim = typeof key === "string" ? key.trim() : "";
+
+    setBeginBusy(true);
+    try {
+      if (g && keyTrim) {
+        await fetchAndPersistCatalogGoals(keyTrim, {
+          userGoal: g,
+          pathLabel: pathMeta?.label ?? pathMeta?.promptLabel ?? "",
+        });
+      }
+    } catch (err) {
+      console.warn("[Sincerity] catalog goals generation failed:", err);
+    } finally {
+      setBeginBusy(false);
+    }
+
     if (g) {
       localStorage.setItem(LS_GOAL, g);
       localStorage.removeItem(LS_GOAL_LEGACY);
@@ -828,10 +847,15 @@ export default function Onboarding() {
               seven leaves, by the mercy of Allah.
             </p>
             <div className="onb__actions" style={{ marginTop: "1.5rem" }}>
-              <button type="button" className="onb__btn onb__btn--primary" onClick={onBegin}>
-                Bismillah, let&apos;s begin
+              <button
+                type="button"
+                className="onb__btn onb__btn--primary"
+                onClick={() => void onBegin()}
+                disabled={beginBusy}
+              >
+                {beginBusy ? "Preparing your causes…" : "Bismillah, let's begin"}
               </button>
-              <button type="button" className="onb__btn onb__btn--ghost" onClick={goBack}>
+              <button type="button" className="onb__btn onb__btn--ghost" onClick={goBack} disabled={beginBusy}>
                 Back
               </button>
             </div>

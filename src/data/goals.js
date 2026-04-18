@@ -1,3 +1,11 @@
+/**
+ * Default Sadaqah / Hasanat causes for the app (dropdowns + charts).
+ *
+ * After onboarding, Gemini usually writes a personalized set of 3+3 rows to
+ * localStorage (`src/lib/catalogGoals.js`). These defaults remain as fallbacks
+ * until then, or if generation fails.
+ */
+
 export const SADAQAH_GOALS = [
   {
     id: "sadaqah_goal1",

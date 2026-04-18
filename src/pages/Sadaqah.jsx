@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { recordDonationForPlantGrowth } from "@/lib/sincerityPlantStorage.js";
-import { SADAQAH_GOALS } from "../data/goals";
+import { getActiveSadaqahGoals } from "@/lib/catalogGoals.js";
 import "./Home.css";
 import "./Sadaqah.css";
 
@@ -94,7 +94,7 @@ function CauseSelect({ value, onChange }) {
         <option value="" disabled>
           Select a cause
         </option>
-        {SADAQAH_GOALS.map((goal) => (
+        {getActiveSadaqahGoals().map((goal) => (
           <option key={goal.id} value={goal.id}>
             {goal.name}
           </option>
@@ -107,6 +107,7 @@ function CauseSelect({ value, onChange }) {
 export default function Sadaqah() {
   const [donations, setDonations] = useState(loadDonations);
   const [cause, setCause] = useState("");
+  const [donateWhere, setDonateWhere] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(todayInputDate);
   const [donationSheetOpen, setDonationSheetOpen] = useState(false);
@@ -152,6 +153,13 @@ export default function Sadaqah() {
     return [...donations].sort((a, b) => String(b.date).localeCompare(String(a.date)));
   }, [donations]);
 
+  const canSubmitDonation =
+    Boolean(cause.trim()) &&
+    Boolean(donateWhere.trim()) &&
+    Boolean(date) &&
+    Number.isFinite(Number.parseFloat(amount)) &&
+    Math.max(0, Math.round(Number.parseFloat(amount))) > 0;
+
   const handleAmountChange = useCallback((ev) => {
     const v = ev.target.value;
     if (v === "") {
@@ -187,24 +195,33 @@ export default function Sadaqah() {
   const logDonation = useCallback(
     (e) => {
       e.preventDefault();
-      const goal = SADAQAH_GOALS.find((g) => g.id === cause);
-      const trimmed = goal ? goal.name.trim() : "";
+      const goal = getActiveSadaqahGoals().find((g) => g.id === cause);
+      const categoryName = goal ? goal.name.trim() : "";
       const n = Math.max(0, Math.round(Number.parseFloat(amount)));
-      if (!trimmed || !Number.isFinite(n) || n <= 0 || !date) return false;
+      if (!categoryName || !Number.isFinite(n) || n <= 0 || !date) return false;
+
+      const whereTitle = donateWhere.trim();
+      if (!whereTitle) return false;
 
       const next = [
         ...donations,
-        { cause: trimmed, amount: n, date },
+        {
+          cause: categoryName,
+          whereTo: whereTitle,
+          amount: n,
+          date,
+        },
       ];
       saveDonations(next);
       recordDonationForPlantGrowth();
       setDonations(next);
       setCause("");
+      setDonateWhere("");
       setAmount("");
       setDate(todayInputDate());
       return true;
     },
-    [amount, cause, date, donations],
+    [amount, cause, date, donateWhere, donations],
   );
 
   return (
@@ -392,13 +409,19 @@ export default function Sadaqah() {
             <p className="sadaqah__muted">Nothing logged yet.</p>
           ) : (
             <ul className="sadaqah__list">
-              {sortedList.map((row, idx) => (
-                <li key={`${row.date}-${row.cause}-${row.amount}-${idx}`} className="sadaqah__row">
-                  <span className="sadaqah__row-cause">{row.cause}</span>
-                  <span className="sadaqah__row-amt">${Math.round(Number(row.amount))}</span>
-                  <span className="sadaqah__row-date">{row.date}</span>
-                </li>
-              ))}
+              {sortedList.map((row, idx) => {
+                const title =
+                  typeof row.whereTo === "string" && row.whereTo.trim()
+                    ? row.whereTo.trim()
+                    : String(row.cause ?? "").trim() || "—";
+                return (
+                  <li key={`${row.date}-${title}-${row.amount}-${idx}`} className="sadaqah__row">
+                    <span className="sadaqah__row-cause">{title}</span>
+                    <span className="sadaqah__row-amt">${Math.round(Number(row.amount))}</span>
+                    <span className="sadaqah__row-date">{row.date}</span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
@@ -467,6 +490,17 @@ export default function Sadaqah() {
             >
               <CauseSelect value={cause} onChange={setCause} />
               <label className="sadaqah__label">
+                <span className="sadaqah__label-text">Where did you donate to today?</span>
+                <input
+                  className="sadaqah__input"
+                  type="text"
+                  value={donateWhere}
+                  onChange={(ev) => setDonateWhere(ev.target.value)}
+                  placeholder="e.g. HDF, local masjid, food bank…"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="sadaqah__label">
                 <span className="sadaqah__label-text">How much? ($)</span>
                 <input
                   className="sadaqah__input"
@@ -492,6 +526,7 @@ export default function Sadaqah() {
               </label>
               <button
                 type="submit"
+                disabled={!canSubmitDonation}
                 style={{
                   marginTop: 4,
                   width: "100%",
@@ -500,9 +535,10 @@ export default function Sadaqah() {
                   borderRadius: 10,
                   fontSize: "0.95rem",
                   fontWeight: 650,
-                  cursor: "pointer",
+                  cursor: canSubmitDonation ? "pointer" : "not-allowed",
                   background: "#b7933f",
                   color: "#42501f",
+                  opacity: canSubmitDonation ? 1 : 0.55,
                 }}
               >
                 Log donation

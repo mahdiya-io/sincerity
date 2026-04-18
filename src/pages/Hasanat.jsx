@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { recordDonationForPlantGrowth } from "@/lib/sincerityPlantStorage.js";
-import { HASANAT_GOALS } from "../data/goals";
+import { getActiveHasanatGoals } from "@/lib/catalogGoals.js";
 import "./Home.css";
 import "./Sadaqah.css";
 
@@ -36,9 +36,10 @@ function saveHasanat(list) {
 /** Pie slices: each logged act counts as 1 toward its goal label. */
 function aggregateHasanatByGoal(entries) {
   const map = new Map();
+  const catalog = getActiveHasanatGoals();
   for (const row of entries) {
     const gid = String(row.goalId ?? "").trim();
-    const goal = HASANAT_GOALS.find((g) => g.id === gid);
+    const goal = catalog.find((g) => g.id === gid);
     const key = goal ? goal.name.trim() : gid || "Unknown";
     map.set(key, (map.get(key) ?? 0) + 1);
   }
@@ -95,7 +96,7 @@ function GoalSelect({ value, onChange }) {
         <option value="" disabled>
           Select a cause
         </option>
-        {HASANAT_GOALS.map((goal) => (
+        {getActiveHasanatGoals().map((goal) => (
           <option key={goal.id} value={goal.id}>
             {goal.name}
           </option>
@@ -106,7 +107,7 @@ function GoalSelect({ value, onChange }) {
 }
 
 function goalLabelForId(goalId) {
-  const g = HASANAT_GOALS.find((x) => x.id === goalId);
+  const g = getActiveHasanatGoals().find((x) => x.id === goalId);
   return g ? g.name : goalId || "—";
 }
 
@@ -160,7 +161,7 @@ export default function Hasanat() {
   const logHasanat = useCallback(
     (e) => {
       e.preventDefault();
-      const picked = HASANAT_GOALS.find((g) => g.id === goalId);
+      const picked = getActiveHasanatGoals().find((g) => g.id === goalId);
       if (!picked || !date) return false;
 
       const next = [
