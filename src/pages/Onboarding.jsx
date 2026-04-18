@@ -4,7 +4,9 @@ import { useNavigate } from "react-router-dom";
 const LS_PATH = "sincerity_onboarding_path";
 const LS_USERNAME = "sincerity_username";
 const LS_PASSWORD = "sincerity_password";
-const LS_GOAL = "sincerity_sadaqah_goal";
+/** Same key as Home.jsx so the goal shows on Home after onboarding. */
+const LS_GOAL = "sincerity_goal";
+const LS_GOAL_LEGACY = "sincerity_sadaqah_goal";
 const LS_SUGGESTIONS = "sincerity_ai_suggestions";
 
 const PATH_OPTIONS = [
@@ -65,7 +67,7 @@ function loadPassword() {
 }
 
 function loadGoal() {
-  return localStorage.getItem(LS_GOAL) ?? "";
+  return localStorage.getItem(LS_GOAL) ?? localStorage.getItem(LS_GOAL_LEGACY) ?? "";
 }
 
 function loadSavedSuggestions() {
@@ -389,6 +391,7 @@ export default function Onboarding() {
       return;
     }
     localStorage.setItem(LS_GOAL, g);
+    localStorage.removeItem(LS_GOAL_LEGACY);
     setAiError("");
     setSuggestions([]);
     setOpenSuggestionId(null);
