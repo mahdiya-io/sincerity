@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import Plant from "@/components/Plant.jsx";
 import { fetchDailyBulletsFromGoal } from "@/lib/geminiDailyBullets.js";
-import { SINCERITY_STORAGE_EVENT } from "@/lib/sincerityPlantStorage.js";
+import { notifySincerityStorageChanged, SINCERITY_STORAGE_EVENT } from "@/lib/sincerityPlantStorage.js";
 import "./Home.css";
 
 const LS_LEAVES = "sincerity_leaves";
@@ -89,11 +89,35 @@ function todayYmd() {
   return `${y}-${m}-${day}`;
 }
 
+function PencilIcon() {
+  return (
+    <svg className="home__goal-edit-icon" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 20h9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function Home() {
   const [, refresh] = useReducer((x) => x + 1, 0);
   const [dailyEntries, setDailyEntries] = useState(/** @type {DailyEntry[]} */ ([]));
   const [dailyLoading, setDailyLoading] = useState(false);
   const [dailyError, setDailyError] = useState(/** @type {string | null} */ (null));
+  const [goalEditOpen, setGoalEditOpen] = useState(false);
+  const [goalDraft, setGoalDraft] = useState("");
+  const goalTextareaRef = useRef(/** @type {HTMLTextAreaElement | null} */ (null));
 
   useEffect(() => {
     const bump = () => refresh();
@@ -106,6 +130,20 @@ export default function Home() {
       window.removeEventListener(SINCERITY_STORAGE_EVENT, bump);
     };
   }, []);
+
+  useEffect(() => {
+    if (!goalEditOpen) return;
+    setGoalDraft(readGoal());
+    const t = window.requestAnimationFrame(() => goalTextareaRef.current?.focus());
+    const onKey = (e) => {
+      if (e.key === "Escape") setGoalEditOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.cancelAnimationFrame(t);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [goalEditOpen]);
 
   useEffect(() => {
     const goal = readGoal().trim();
@@ -175,6 +213,25 @@ export default function Home() {
     return () => ac.abort();
   }, [refresh]);
 
+  const closeGoalEdit = useCallback(() => setGoalEditOpen(false), []);
+
+  const saveGoalEdit = useCallback(() => {
+    const prev = readGoal().trim();
+    const t = goalDraft.trim();
+    if (t) localStorage.setItem(LS_GOAL, t);
+    else localStorage.removeItem(LS_GOAL);
+    if (t !== prev) {
+      try {
+        localStorage.removeItem(LS_DAILY_BULLETS);
+      } catch {
+        /* ignore */
+      }
+    }
+    notifySincerityStorageChanged();
+    setGoalEditOpen(false);
+    refresh();
+  }, [goalDraft]);
+
   const toggleDailyEntry = useCallback((index) => {
     setDailyEntries((prev) => {
       if (index < 0 || index >= prev.length) return prev;
@@ -221,9 +278,20 @@ export default function Home() {
       </blockquote>
 
       <section className="home__goal" aria-labelledby="home-goal-heading">
-        <h2 id="home-goal-heading" className="home__goal-label">
-          Your goal
-        </h2>
+        <div className="home__goal-heading-row">
+          <h2 id="home-goal-heading" className="home__goal-label">
+            Your goal
+          </h2>
+          <button
+            type="button"
+            className="home__goal-edit"
+            title="Edit goal"
+            aria-label="Edit goal"
+            onClick={() => setGoalEditOpen(true)}
+          >
+            <PencilIcon />
+          </button>
+        </div>
         <p className="home__goal-text">{goal.trim() ? goal : "No goal pinned yet — set one during onboarding."}</p>
 
         {goal.trim() ? (
@@ -268,6 +336,44 @@ export default function Home() {
           </div>
         ) : null}
       </section>
+
+      {goalEditOpen ? (
+        <div
+          className="home__goal-overlay"
+          role="presentation"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeGoalEdit();
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="home-goal-edit-title"
+            className="home__goal-dialog"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h3 id="home-goal-edit-title" className="home__goal-dialog-title">
+              Edit goal
+            </h3>
+            <textarea
+              ref={goalTextareaRef}
+              className="home__goal-dialog-input"
+              value={goalDraft}
+              onChange={(e) => setGoalDraft(e.target.value)}
+              rows={5}
+              placeholder="Describe your intention in your own words…"
+            />
+            <div className="home__goal-dialog-actions">
+              <button type="button" className="home__goal-dialog-btn home__goal-dialog-btn--primary" onClick={saveGoalEdit}>
+                Save
+              </button>
+              <button type="button" className="home__goal-dialog-btn" onClick={closeGoalEdit}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
