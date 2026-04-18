@@ -1,0 +1,2 @@
+# sincerity
+sadaqah IS sincerity
