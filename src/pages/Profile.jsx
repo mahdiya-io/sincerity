@@ -50,9 +50,9 @@ function MiniFullFlower() {
     <svg width="40" height="44" viewBox="0 0 40 44" aria-hidden>
       <path d="M20 40 L20 24" stroke="#1D9E75" strokeWidth="2" strokeLinecap="round" fill="none" />
       <g transform="translate(20, 20)" fill="#EF9F27" stroke="#B8731A" strokeWidth="0.35">
-        <ellipse cx="0" cy="-6" rx="4.5" ry="10" transform="rotate(-30)" />
-        <ellipse cx="0" cy="-6" rx="4.5" ry="10" transform="rotate(30)" />
-        <ellipse cx="0" cy="-9" rx="4" ry="8" />
+        <ellipse cx="0" cy="-6" rx="4" ry="9.5" transform="rotate(-54)" />
+        <ellipse cx="0" cy="-6" rx="4" ry="9.5" transform="rotate(54)" />
+        <ellipse cx="0" cy="-9" rx="3.8" ry="7.8" />
         <ellipse cx="0" cy="-6" rx="4.5" ry="10" transform="rotate(95)" />
         <ellipse cx="0" cy="-6" rx="4.5" ry="10" transform="rotate(-95)" />
       </g>
