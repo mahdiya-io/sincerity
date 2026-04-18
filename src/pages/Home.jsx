@@ -1,5 +1,6 @@
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import Plant from "@/components/Plant.jsx";
+import { fetchDailyBulletsFromGoal } from "@/lib/geminiDailyBullets.js";
 import { SINCERITY_STORAGE_EVENT } from "@/lib/sincerityPlantStorage.js";
 import "./Home.css";
 
@@ -8,6 +9,36 @@ const LS_LAST_ACT = "sincerity_last_act";
 const LS_GOAL = "sincerity_goal";
 const LS_DONATIONS = "sincerity_donations";
 const LS_HASANAT = "sincerity_hasanat";
+/** Cached AI daily checklist: { date, goal, entries: [{ text, done }] } (legacy: items: string[]) */
+const LS_DAILY_BULLETS = "sincerity_home_daily_bullets_cache";
+
+/** @typedef {{ text: string; done: boolean }} DailyEntry */
+
+function normalizeDailyCache(raw, date, goal) {
+  try {
+    const c = JSON.parse(raw);
+    if (c?.date !== date || c?.goal !== goal) return null;
+    if (Array.isArray(c.entries)) {
+      const entries = c.entries
+        .filter((e) => e && typeof e.text === "string")
+        .map((e) => ({ text: String(e.text).trim(), done: Boolean(e.done) }))
+        .filter((e) => e.text)
+        .slice(0, 3);
+      return entries.length >= 2 ? entries : null;
+    }
+    if (Array.isArray(c.items)) {
+      const items = c.items
+        .filter((x) => typeof x === "string")
+        .map((x) => x.trim())
+        .filter(Boolean)
+        .slice(0, 3);
+      if (items.length >= 2) return items.map((text) => ({ text, done: false }));
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 function parseJsonArray(key) {
   try {
@@ -50,8 +81,19 @@ function computeWilt(lastActMs) {
   return 1;
 }
 
+function todayYmd() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export default function Home() {
   const [, refresh] = useReducer((x) => x + 1, 0);
+  const [dailyEntries, setDailyEntries] = useState(/** @type {DailyEntry[]} */ ([]));
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [dailyError, setDailyError] = useState(/** @type {string | null} */ (null));
 
   useEffect(() => {
     const bump = () => refresh();
@@ -63,6 +105,89 @@ export default function Home() {
       window.removeEventListener("focus", bump);
       window.removeEventListener(SINCERITY_STORAGE_EVENT, bump);
     };
+  }, []);
+
+  useEffect(() => {
+    const goal = readGoal().trim();
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+    if (!goal) {
+      setDailyEntries([]);
+      setDailyLoading(false);
+      setDailyError(null);
+      return;
+    }
+
+    if (!apiKey || String(apiKey).trim() === "") {
+      setDailyEntries([]);
+      setDailyLoading(false);
+      setDailyError(null);
+      return;
+    }
+
+    const date = todayYmd();
+    const donationCount = parseJsonArray(LS_DONATIONS).length;
+    const hasanatCount = parseJsonArray(LS_HASANAT).length;
+
+    const raw = localStorage.getItem(LS_DAILY_BULLETS);
+    if (raw) {
+      const cached = normalizeDailyCache(raw, date, goal);
+      if (cached) {
+        setDailyEntries(cached);
+        try {
+          const c = JSON.parse(raw);
+          if (!Array.isArray(c.entries) && Array.isArray(c.items)) {
+            localStorage.setItem(LS_DAILY_BULLETS, JSON.stringify({ date, goal, entries: cached }));
+          }
+        } catch {
+          /* ignore */
+        }
+        setDailyLoading(false);
+        setDailyError(null);
+        return;
+      }
+    }
+
+    const ac = new AbortController();
+    setDailyLoading(true);
+    setDailyError(null);
+    setDailyEntries([]);
+
+    (async () => {
+      try {
+        const items = await fetchDailyBulletsFromGoal(apiKey, goal, ac.signal, {
+          donationCount,
+          hasanatCount,
+        });
+        if (ac.signal.aborted) return;
+        const entries = items.map((text) => ({ text, done: false }));
+        setDailyEntries(entries);
+        localStorage.setItem(LS_DAILY_BULLETS, JSON.stringify({ date, goal, entries }));
+      } catch (e) {
+        if (ac.signal.aborted) return;
+        setDailyEntries([]);
+        setDailyError(e instanceof Error ? e.message : "Could not load daily suggestions.");
+      } finally {
+        if (!ac.signal.aborted) setDailyLoading(false);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [refresh]);
+
+  const toggleDailyEntry = useCallback((index) => {
+    setDailyEntries((prev) => {
+      if (index < 0 || index >= prev.length) return prev;
+      const next = prev.map((e, i) => (i === index ? { ...e, done: !e.done } : e));
+      const goal = readGoal().trim();
+      const date = todayYmd();
+      try {
+        localStorage.setItem(LS_DAILY_BULLETS, JSON.stringify({ date, goal, entries: next }));
+      } catch {
+        /* ignore quota */
+      }
+      return next;
+    });
   }, []);
 
   const leaves = readLeaves();
@@ -100,6 +225,48 @@ export default function Home() {
           Your goal
         </h2>
         <p className="home__goal-text">{goal.trim() ? goal : "No goal pinned yet — set one during onboarding."}</p>
+
+        {goal.trim() ? (
+          <div className="home__daily" aria-live="polite">
+            <h3 className="home__daily-label">Today</h3>
+            {dailyLoading ? <p className="home__daily-muted">Gathering small steps for you…</p> : null}
+            {!dailyLoading && dailyError ? <p className="home__daily-err">{dailyError}</p> : null}
+            {!dailyLoading && !dailyError && dailyEntries.length >= 2 ? (
+              <ul className="home__daily-list">
+                {dailyEntries.map((entry, idx) => (
+                  <li key={`${idx}-${entry.text.slice(0, 28)}`} className="home__daily-item">
+                    <label className={`home__daily-check${entry.done ? " home__daily-check--done" : ""}`}>
+                      <input
+                        type="checkbox"
+                        className="home__daily-input"
+                        checked={entry.done}
+                        onChange={() => toggleDailyEntry(idx)}
+                        aria-label={entry.done ? `Done: ${entry.text}` : `Mark done: ${entry.text}`}
+                      />
+                      <span className="home__daily-check-text">{entry.text}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {!dailyLoading &&
+            !dailyError &&
+            dailyEntries.length < 2 &&
+            (!import.meta.env.VITE_GEMINI_API_KEY || String(import.meta.env.VITE_GEMINI_API_KEY).trim() === "") ? (
+              <p className="home__daily-muted">
+                Add <code className="home__daily-code">VITE_GEMINI_API_KEY</code> in <code className="home__daily-code">.env</code>{" "}
+                to see AI daily steps here.
+              </p>
+            ) : null}
+            {!dailyLoading &&
+            !dailyError &&
+            dailyEntries.length < 2 &&
+            import.meta.env.VITE_GEMINI_API_KEY &&
+            String(import.meta.env.VITE_GEMINI_API_KEY).trim() !== "" ? (
+              <p className="home__daily-muted">No suggestions loaded — try refreshing the page.</p>
+            ) : null}
+          </div>
+        ) : null}
       </section>
     </div>
   );

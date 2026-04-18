@@ -1,9 +1,8 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { notifySincerityStorageChanged } from "@/lib/sincerityPlantStorage.js";
 
 const LS_PATH = "sincerity_onboarding_path";
-const LS_USERNAME = "sincerity_username";
-const LS_PASSWORD = "sincerity_password";
 /** Same key as Home.jsx so the goal shows on Home after onboarding. */
 const LS_GOAL = "sincerity_goal";
 const LS_GOAL_LEGACY = "sincerity_sadaqah_goal";
@@ -59,27 +58,12 @@ function loadPath() {
   return PATH_OPTIONS.some((p) => p.id === v) ? v : "";
 }
 
-function loadUsername() {
-  return localStorage.getItem(LS_USERNAME) ?? "";
-}
-
-function loadPassword() {
-  return localStorage.getItem(LS_PASSWORD) ?? "";
-}
-
+/**
+ * Read pinned goal from storage (Home / Sadaqah use `sincerity_goal`).
+ * Onboarding does not read or write this key — goal/focus is only for the AI step in memory.
+ */
 function loadGoal() {
   return localStorage.getItem(LS_GOAL) ?? localStorage.getItem(LS_GOAL_LEGACY) ?? "";
-}
-
-function loadSavedSuggestions() {
-  try {
-    const raw = localStorage.getItem(LS_SUGGESTIONS);
-    if (!raw) return [];
-    const p = JSON.parse(raw);
-    return Array.isArray(p) ? p : [];
-  } catch {
-    return [];
-  }
 }
 
 /** @typedef {{ title: string; description: string; type: string }} Suggestion */
@@ -344,15 +328,24 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [pathId, setPathId] = useState(loadPath);
-  const [username, setUsername] = useState(loadUsername);
-  const [password, setPassword] = useState(loadPassword);
-  const [goal, setGoal] = useState(loadGoal);
-  /** @type {[Suggestion[], React.Dispatch<React.SetStateAction<Suggestion[]>>]} */
-  const [suggestions, setSuggestions] = useState(loadSavedSuggestions);
+  /** Session-only — not persisted (demo privacy). */
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  /** Goal/focus for Gemini only — empty on load so we never pull `sincerity_goal` into this screen. */
+  const [goal, setGoal] = useState("");
+  /** Only filled after a successful "Get suggestions" click — never from localStorage on load. */
+  const [suggestions, setSuggestions] = useState(/** @type {Suggestion[]} */ ([]));
+
+  useEffect(() => {
+    localStorage.removeItem("sincerity_username");
+    localStorage.removeItem("sincerity_password");
+  }, []);
   const [loadingAi, setLoadingAi] = useState(false);
   const [aiError, setAiError] = useState("");
   /** Which suggestion row is expanded (`sug-0` …); null = none. */
   const [openSuggestionId, setOpenSuggestionId] = useState(null);
+  /** Invalidates staggered reveal timeouts when starting a new fetch or leaving step 2. */
+  const suggestionsRevealGen = useRef(0);
 
   const pathMeta = useMemo(() => PATH_OPTIONS.find((p) => p.id === pathId), [pathId]);
 
@@ -361,7 +354,16 @@ export default function Onboarding() {
   }, []);
 
   const goBack = useCallback(() => {
-    setStep((s) => Math.max(s - 1, 0));
+    setStep((s) => {
+      const next = Math.max(s - 1, 0);
+      if (s === 2 && next === 1) {
+        suggestionsRevealGen.current += 1;
+        setSuggestions([]);
+        setOpenSuggestionId(null);
+        setAiError("");
+      }
+      return next;
+    });
   }, []);
 
   const onChoosePath = (id) => {
@@ -374,8 +376,10 @@ export default function Onboarding() {
     e.preventDefault();
     const u = username.trim();
     if (!u) return;
-    localStorage.setItem(LS_USERNAME, u);
-    localStorage.setItem(LS_PASSWORD, password);
+    suggestionsRevealGen.current += 1;
+    setSuggestions([]);
+    setOpenSuggestionId(null);
+    setAiError("");
     goNext();
   };
 
@@ -391,8 +395,8 @@ export default function Onboarding() {
       setAiError("Please describe your sadaqah goal first.");
       return;
     }
-    localStorage.setItem(LS_GOAL, g);
-    localStorage.removeItem(LS_GOAL_LEGACY);
+    suggestionsRevealGen.current += 1;
+    const gen = suggestionsRevealGen.current;
     setAiError("");
     setSuggestions([]);
     setOpenSuggestionId(null);
@@ -414,10 +418,12 @@ export default function Onboarding() {
         setSuggestions([]);
         for (let i = 0; i < 5; i++) {
           window.setTimeout(() => {
+            if (suggestionsRevealGen.current !== gen) return;
             setSuggestions(rows.slice(0, i + 1));
           }, 220 * (i + 1));
         }
         window.setTimeout(() => {
+          if (suggestionsRevealGen.current !== gen) return;
           localStorage.setItem(LS_SUGGESTIONS, JSON.stringify(rows));
         }, 220 * 5 + 80);
       } else if (final.length > 0) {
@@ -436,7 +442,13 @@ export default function Onboarding() {
   };
 
   const onBegin = () => {
+    const g = goal.trim();
+    if (g) {
+      localStorage.setItem(LS_GOAL, g);
+      localStorage.removeItem(LS_GOAL_LEGACY);
+    }
     localStorage.setItem(LS_ONBOARDING_DONE, "1");
+    notifySincerityStorageChanged();
     navigate("/home", { replace: true });
   };
 
@@ -692,7 +704,9 @@ export default function Onboarding() {
         {step === 1 && (
           <>
             <h1 className="onb__h1">Create your space</h1>
-            <p className="onb__sub">This stays on your device only — no server, no real accounts.</p>
+            <p className="onb__sub">
+              No server and no real accounts — username and password are only for this session and are not saved.
+            </p>
             <form className="onb__form" onSubmit={onSaveCredentials}>
               <label className="onb__label">
                 <span className="onb__label-text">Username</span>
@@ -712,7 +726,7 @@ export default function Onboarding() {
                   value={password}
                   onChange={(ev) => setPassword(ev.target.value)}
                   autoComplete="new-password"
-                  placeholder="For demo only — stored locally"
+                  placeholder="Demo only — not saved"
                 />
               </label>
               <div className="onb__actions">

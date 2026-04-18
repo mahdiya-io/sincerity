@@ -112,3 +112,90 @@
   line-height: 1.45;
   font-weight: 500;
 }
+
+.home__daily {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-cream) 14%, transparent);
+}
+
+.home__daily-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.72;
+  color: var(--color-antique-gold);
+}
+
+.home__daily-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--color-cream) 94%, transparent);
+}
+
+.home__daily-item {
+  margin-bottom: 0.55rem;
+}
+
+.home__daily-item:last-child {
+  margin-bottom: 0;
+}
+
+.home__daily-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0.35rem 0.25rem;
+  margin: 0 -0.25rem;
+}
+
+.home__daily-check:hover {
+  background: color-mix(in srgb, var(--color-cream) 6%, transparent);
+}
+
+.home__daily-input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0.12rem 0 0;
+  flex-shrink: 0;
+  accent-color: var(--color-antique-gold);
+  cursor: pointer;
+}
+
+.home__daily-check-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.home__daily-check--done .home__daily-check-text {
+  text-decoration: line-through;
+  opacity: 0.62;
+}
+
+.home__daily-muted {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  opacity: 0.78;
+}
+
+.home__daily-err {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--color-cream) 82%, #c44);
+}
+
+.home__daily-code {
+  font-size: 0.78em;
+  padding: 0.08em 0.3em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-forest) 45%, transparent);
+}
