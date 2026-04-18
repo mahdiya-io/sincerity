@@ -1,3 +1,5 @@
+import { HASANAT_GOALS } from "../data/goals";
+
 export default function Hasanat() {
   return (
     <div className="page">
@@ -8,7 +10,11 @@ export default function Hasanat() {
           list or journal flow when you build it out.
         </p>
       </header>
-      <section className="page__panel" aria-label="Empty state">
+      <section
+        className="page__panel"
+        aria-label="Empty state"
+        data-goal-templates={HASANAT_GOALS.length}
+      >
         <p className="page__muted">Nothing logged yet — UI placeholder.</p>
       </section>
     </div>
