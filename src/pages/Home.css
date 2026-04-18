@@ -1,0 +1,114 @@
+@keyframes home-plant-sway {
+  0%,
+  100% {
+    transform: rotate(-1.4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(1.6deg) translateY(-2px);
+  }
+}
+
+@keyframes home-plant-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.home {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  min-height: calc(100vh - 4.25rem - env(safe-area-inset-bottom, 0px));
+  min-height: calc(100dvh - 4.25rem - env(safe-area-inset-bottom, 0px));
+  padding: 0.75rem 1rem 1rem;
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+  color: var(--color-cream);
+  overflow-y: auto;
+}
+
+.home__greet {
+  text-align: center;
+  margin-bottom: 0.25rem;
+  flex-shrink: 0;
+}
+
+.home__salam {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  color: var(--color-cream);
+  text-shadow: 0 1px 18px color-mix(in srgb, var(--color-antique-gold) 35%, transparent);
+}
+
+.home__plant-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  flex-shrink: 0;
+  min-height: 188px;
+  padding: 0.35rem 0 0.15rem;
+  animation: home-plant-sway 6.5s ease-in-out infinite;
+}
+
+.home__plant-wrap .plant {
+  display: block;
+  animation: home-plant-breathe 5s ease-in-out infinite;
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.22));
+}
+
+.home__ayah {
+  margin: 0.65rem 0 0;
+  padding: 0 0.15rem;
+  border: none;
+  flex-shrink: 0;
+}
+
+.home__ayah-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  font-style: italic;
+  opacity: 0.9;
+  color: color-mix(in srgb, var(--color-cream) 94%, transparent);
+}
+
+.home__ayah-ref {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  font-style: normal;
+  opacity: 0.65;
+  letter-spacing: 0.03em;
+}
+
+.home__goal {
+  margin-top: 0.85rem;
+  padding: 1rem 1rem;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--color-forest) 88%, var(--color-cream));
+  border: 1px solid color-mix(in srgb, var(--color-cream) 16%, transparent);
+}
+
+.home__goal-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.home__goal-text {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
