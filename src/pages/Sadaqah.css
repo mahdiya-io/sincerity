@@ -1,0 +1,244 @@
+.sadaqah {
+  padding: 1.25rem 1rem 2rem;
+  color: var(--color-cream);
+}
+
+.sadaqah__header {
+  margin-bottom: 1.25rem;
+}
+
+.sadaqah__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-cream);
+}
+
+.sadaqah__lede {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.88;
+  line-height: 1.45;
+}
+
+.sadaqah__section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-forest) 88%, var(--color-cream));
+  border: 1px solid color-mix(in srgb, var(--color-cream) 18%, transparent);
+}
+
+.sadaqah__h2 {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--color-cream);
+}
+
+.sadaqah__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.sadaqah__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sadaqah__label-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--color-cream) 92%, var(--color-forest));
+}
+
+.sadaqah__input {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-cream) 28%, transparent);
+  background: color-mix(in srgb, var(--color-forest) 65%, #1a1f0d);
+  color: var(--color-cream);
+  font-size: 1rem;
+}
+
+.sadaqah__input::placeholder {
+  color: color-mix(in srgb, var(--color-cream) 45%, transparent);
+}
+
+.sadaqah__input:focus {
+  outline: 2px solid var(--color-antique-gold);
+  outline-offset: 1px;
+}
+
+.sadaqah__submit {
+  margin-top: 0.25rem;
+  padding: 0.65rem 1rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 650;
+  cursor: pointer;
+  background: var(--color-antique-gold);
+  color: var(--color-forest);
+}
+
+.sadaqah__submit:hover {
+  filter: brightness(1.06);
+}
+
+.sadaqah__submit:active {
+  transform: translateY(1px);
+}
+
+.sadaqah__muted {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.sadaqah__code {
+  font-size: 0.82em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-forest) 40%, transparent);
+}
+
+.sadaqah__goal-line {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.sadaqah__goal-sep {
+  opacity: 0.75;
+}
+
+.sadaqah__badge {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-sage);
+  color: var(--color-forest);
+  vertical-align: middle;
+}
+
+.sadaqah__progress {
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-cream) 14%, transparent);
+  overflow: hidden;
+}
+
+.sadaqah__progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--color-sage),
+    var(--color-antique-gold)
+  );
+  transition: width 0.25s ease;
+}
+
+.sadaqah__chart-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sadaqah__pie {
+  width: min(200px, 70vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow: 0 6px 24px color-mix(in srgb, #000 35%, transparent);
+  border: 2px solid color-mix(in srgb, var(--color-cream) 25%, transparent);
+}
+
+.sadaqah__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sadaqah__legend-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.sadaqah__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--color-cream) 35%, transparent);
+}
+
+.sadaqah__legend-cause {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sadaqah__legend-meta {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.92;
+  font-size: 0.82rem;
+}
+
+.sadaqah__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sadaqah__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0.15rem 0.65rem;
+  padding: 0.6rem 0.55rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-forest) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-cream) 12%, transparent);
+  font-size: 0.88rem;
+}
+
+.sadaqah__row-cause {
+  font-weight: 600;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.sadaqah__row-date {
+  grid-column: 1;
+  grid-row: 2;
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
+.sadaqah__row-amt {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-antique-gold);
+}

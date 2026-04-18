@@ -1,0 +1,45 @@
+:root {
+  --color-cream: #e5d3ad;
+  --color-sage: #a0a175;
+  --color-olive: #7d7e3c;
+  --color-forest: #42501f;
+  --color-antique-gold: #b7933f;
+  --color-wood-brown: #7e551f;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-forest);
+  color: var(--color-cream);
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+.app-shell {
+  width: 100%;
+  max-width: 390px;
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--color-forest);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-cream) 12%, transparent);
+}
+
+.app-main {
+  min-height: 100vh;
+}

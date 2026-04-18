@@ -1,2 +1,2 @@
 # sincerity
-sadaqah IS sincerity
+Niyyah Hacks!
