@@ -8,6 +8,7 @@ const LS_PASSWORD = "sincerity_password";
 const LS_GOAL = "sincerity_goal";
 const LS_GOAL_LEGACY = "sincerity_sadaqah_goal";
 const LS_SUGGESTIONS = "sincerity_ai_suggestions";
+const LS_ONBOARDING_DONE = "sincerity_onboarding_complete";
 
 const PATH_OPTIONS = [
   {
@@ -435,6 +436,7 @@ export default function Onboarding() {
   };
 
   const onBegin = () => {
+    localStorage.setItem(LS_ONBOARDING_DONE, "1");
     navigate("/home", { replace: true });
   };
 
