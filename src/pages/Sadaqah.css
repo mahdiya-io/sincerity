@@ -7,45 +7,6 @@
   margin-bottom: 1.25rem;
 }
 
-.sadaqah__header-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.sadaqah__header-text {
-  min-width: 0;
-  flex: 1;
-}
-
-.sadaqah__reset {
-  flex-shrink: 0;
-  margin-top: 0.15rem;
-  padding: 0.45rem 0.65rem;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--color-cream) 28%, transparent);
-  background: color-mix(in srgb, var(--color-forest) 70%, var(--color-cream));
-  color: var(--color-cream);
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-}
-
-.sadaqah__reset:hover {
-  background: color-mix(in srgb, var(--color-forest) 55%, var(--color-cream));
-}
-
-.sadaqah__reset:active {
-  transform: translateY(1px);
-}
-
-.sadaqah__reset:focus-visible {
-  outline: 2px solid var(--color-antique-gold);
-  outline-offset: 2px;
-}
-
 .sadaqah__title {
   margin: 0 0 0.35rem;
   font-size: 1.35rem;
