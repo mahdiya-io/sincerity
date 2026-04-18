@@ -1,4 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
+import {
+  recordDonationForPlantGrowth,
+  resetPlantStateToFresh,
+} from "@/lib/sincerityPlantStorage.js";
 import "./Sadaqah.css";
 
 const DONATIONS_KEY = "sincerity_donations";
@@ -178,6 +182,24 @@ export default function Sadaqah() {
     });
   }, []);
 
+  const handleReset = useCallback(() => {
+    if (
+      !window.confirm(
+        "Clear all logged donations, remove this month’s savings goal, and reset your plant on Home? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+    try {
+      localStorage.removeItem(DONATIONS_KEY);
+      localStorage.removeItem(GOAL_KEY);
+    } catch {
+      /* ignore */
+    }
+    resetPlantStateToFresh();
+    setDonations([]);
+  }, []);
+
   const logDonation = useCallback(
     (e) => {
       e.preventDefault();
@@ -190,6 +212,7 @@ export default function Sadaqah() {
         { cause: trimmed, amount: n, date },
       ];
       saveDonations(next);
+      recordDonationForPlantGrowth();
       setDonations(next);
       setCause("");
       setAmount("");
@@ -259,8 +282,15 @@ export default function Sadaqah() {
       `}</style>
       <div className="sadaqah">
         <header className="sadaqah__header">
-          <h1 className="sadaqah__title">Monetary Sadaqah</h1>
-          <p className="sadaqah__lede">Log donations and see them by cause.</p>
+          <div className="sadaqah__header-top">
+            <div className="sadaqah__header-text">
+              <h1 className="sadaqah__title">Monetary Sadaqah</h1>
+              <p className="sadaqah__lede">Log donations and see them by cause.</p>
+            </div>
+            <button type="button" className="sadaqah__reset" onClick={handleReset}>
+              Start over
+            </button>
+          </div>
         </header>
 
         <section className="sadaqah__section" aria-labelledby="sadaqah-form-heading">
