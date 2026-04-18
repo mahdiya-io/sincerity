@@ -19,8 +19,8 @@ export default function App() {
           <NavLink to="/home" className={tabLinkClass} end>
             Home
           </NavLink>
-          <NavLink to="/tracker" className={tabLinkClass}>
-            Tracker
+          <NavLink to="/profile" className={tabLinkClass}>
+            Profile
           </NavLink>
           <NavLink to="/hasanat" className={tabLinkClass}>
             Hasanat

@@ -1,0 +1,154 @@
+.profile {
+  box-sizing: border-box;
+  max-width: 22rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2rem;
+  color: var(--color-cream);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile__avatar-wrap {
+  position: relative;
+  width: 5.75rem;
+  height: 5.75rem;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(
+    135deg,
+    var(--color-antique-gold),
+    var(--color-sage),
+    var(--color-olive)
+  );
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.28);
+}
+
+.profile__avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  background: color-mix(in srgb, var(--color-forest) 55%, #1a2210);
+}
+
+.profile__avatar--initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--color-cream);
+  font-family: system-ui, sans-serif;
+}
+
+.profile__name {
+  margin: 0 0 0.2rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.profile__username {
+  margin: 0 0 0.65rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--color-cream) 72%, var(--color-forest));
+}
+
+.profile__bio {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  opacity: 0.92;
+}
+
+.profile__location {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  opacity: 0.85;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  color: color-mix(in srgb, var(--color-cream) 90%, transparent);
+}
+
+.profile__pin {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.profile__stat {
+  margin: 0 0 1.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 650;
+  background: color-mix(in srgb, var(--color-forest) 82%, var(--color-cream));
+  border: 1px solid color-mix(in srgb, var(--color-cream) 16%, transparent);
+}
+
+.profile__stat-value {
+  color: var(--color-antique-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile__calendar {
+  width: 100%;
+  text-align: center;
+}
+
+.profile__calendar-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.profile__months {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem 0.5rem;
+  width: 100%;
+  max-width: 19rem;
+  margin: 0 auto;
+}
+
+.profile__month {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.2rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-forest) 88%, var(--color-cream));
+  border: 1px solid color-mix(in srgb, var(--color-cream) 12%, transparent);
+}
+
+.profile__month-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.profile__month-visual {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 2.75rem;
+  width: 100%;
+}
+
+.profile__month-visual svg {
+  display: block;
+  margin: 0 auto;
+}

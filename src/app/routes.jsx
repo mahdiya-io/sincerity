@@ -3,7 +3,7 @@ import Hasanat from "@/pages/Hasanat.jsx";
 import Home from "@/pages/Home.jsx";
 import Onboarding from "@/pages/Onboarding.jsx";
 import Sadaqah from "@/pages/Sadaqah.jsx";
-import Tracker from "@/pages/Tracker.jsx";
+import Profile from "@/pages/Profile.jsx";
 
 const LS_ONBOARDING_DONE = "sincerity_onboarding_complete";
 
@@ -32,11 +32,12 @@ export function AppRoutes() {
           </RequireOnboarding>
         }
       />
+      <Route path="/tracker" element={<Navigate to="/profile" replace />} />
       <Route
-        path="/tracker"
+        path="/profile"
         element={
           <RequireOnboarding>
-            <Tracker />
+            <Profile />
           </RequireOnboarding>
         }
       />

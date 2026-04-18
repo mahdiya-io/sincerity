@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
-import { recordDonationForPlantGrowth } from "@/lib/sincerityPlantStorage.js";
-import { SADAQAH_GOALS } from "../data/goals";
-import "./Home.css";
+import {
+  recordDonationForPlantGrowth,
+  resetPlantStateToFresh,
+} from "@/lib/sincerityPlantStorage.js";
 import "./Sadaqah.css";
 
 const DONATIONS_KEY = "sincerity_donations";
-const MONTH_GOAL_TEXT_KEY = "sincerity_goal";
+const GOAL_KEY = "sincerity_monthly_goal";
 
 const CHART_COLORS = [
   "var(--color-antique-gold)",
@@ -31,6 +32,50 @@ function loadDonations() {
 
 function saveDonations(list) {
   localStorage.setItem(DONATIONS_KEY, JSON.stringify(list));
+}
+
+/** Parse a numeric goal from plain number text or copy that includes a $ amount. */
+function parseGoalAmount(raw) {
+  if (raw == null) return null;
+  const str = String(raw).trim();
+  if (!str) return null;
+
+  const dollarMatch = str.match(/\$\s*([\d,]+(?:\.\d+)?)/);
+  if (dollarMatch) {
+    const n = Number.parseFloat(dollarMatch[1].replace(/,/g, ""));
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+
+  const normalized = str.replace(/,/g, "");
+  if (/^\d+(\.\d+)?$/.test(normalized)) {
+    const n = Number.parseFloat(normalized);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+
+  return null;
+}
+
+function readGoalAmount() {
+  const raw = localStorage.getItem(GOAL_KEY);
+  const n = parseGoalAmount(raw);
+  if (n == null || n <= 0) return null;
+  return n;
+}
+
+function currentYearMonth(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function sumForYearMonth(donations, ym) {
+  return donations.reduce((sum, row) => {
+    if (typeof row.date === "string" && row.date.startsWith(ym)) {
+      const n = Number(row.amount);
+      return sum + (Number.isFinite(n) ? n : 0);
+    }
+    return sum;
+  }, 0);
 }
 
 function aggregateByCause(donations) {
@@ -82,28 +127,6 @@ function todayInputDate() {
   return `${y}-${m}-${day}`;
 }
 
-function CauseSelect({ value, onChange }) {
-  return (
-    <label className="sadaqah__label">
-      <span className="sadaqah__label-text">Who did you donate to?</span>
-      <select
-        className="sadaqah__input"
-        value={value}
-        onChange={(ev) => onChange(ev.target.value)}
-      >
-        <option value="" disabled>
-          Select a cause
-        </option>
-        {SADAQAH_GOALS.map((goal) => (
-          <option key={goal.id} value={goal.id}>
-            {goal.name}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 export default function Sadaqah() {
   const [donations, setDonations] = useState(loadDonations);
   const [cause, setCause] = useState("");
@@ -111,39 +134,14 @@ export default function Sadaqah() {
   const [date, setDate] = useState(todayInputDate);
   const [donationSheetOpen, setDonationSheetOpen] = useState(false);
 
-  const monthGoalProgress = useMemo(() => {
-    let goalStr = "";
-    try {
-      goalStr = localStorage.getItem(MONTH_GOAL_TEXT_KEY) ?? "";
-    } catch {
-      goalStr = "";
-    }
-    const match = goalStr.match(/\$(\d+)/);
-    const goalAmount = match ? parseInt(match[1], 10) : null;
+  const goalAmount = readGoalAmount();
+  const ym = currentYearMonth();
+  const monthTotal = useMemo(
+    () => sumForYearMonth(donations, ym),
+    [donations, ym],
+  );
 
-    let list = [];
-    try {
-      const raw = localStorage.getItem(DONATIONS_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        list = Array.isArray(parsed) ? parsed : [];
-      }
-    } catch {
-      list = [];
-    }
-
-    const totalDonated = list.reduce((sum, row) => {
-      const n = Number(row.amount);
-      return sum + (Number.isFinite(n) ? Math.round(n) : 0);
-    }, 0);
-
-    const validGoal = goalAmount != null && goalAmount > 0;
-    const percent = validGoal
-      ? Math.min((totalDonated / goalAmount) * 100, 100)
-      : 0;
-
-    return { goalAmount: validGoal ? goalAmount : null, totalDonated, percent };
-  }, [donations]);
+  const overGoal = goalAmount != null && monthTotal > goalAmount;
 
   const byCause = useMemo(() => aggregateByCause(donations), [donations]);
   const chart = useMemo(() => buildConicGradient(byCause), [byCause]);
@@ -184,11 +182,28 @@ export default function Sadaqah() {
     });
   }, []);
 
+  const handleReset = useCallback(() => {
+    if (
+      !window.confirm(
+        "Clear all logged donations, remove this month’s savings goal, and reset your plant on Home? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+    try {
+      localStorage.removeItem(DONATIONS_KEY);
+      localStorage.removeItem(GOAL_KEY);
+    } catch {
+      /* ignore */
+    }
+    resetPlantStateToFresh();
+    setDonations([]);
+  }, []);
+
   const logDonation = useCallback(
     (e) => {
       e.preventDefault();
-      const goal = SADAQAH_GOALS.find((g) => g.id === cause);
-      const trimmed = goal ? goal.name.trim() : "";
+      const trimmed = cause.trim();
       const n = Math.max(0, Math.round(Number.parseFloat(amount)));
       if (!trimmed || !Number.isFinite(n) || n <= 0 || !date) return false;
 
@@ -267,89 +282,102 @@ export default function Sadaqah() {
       `}</style>
       <div className="sadaqah">
         <header className="sadaqah__header">
-          <h1 className="sadaqah__title">Monetary Sadaqah</h1>
-          <blockquote className="home__ayah" cite="https://quran.com/2/261">
-            <p className="home__ayah-text">
-              &ldquo;Charity does not decrease wealth.&hellip;&rdquo;
-            </p>
-            <footer className="home__ayah-ref">Sahih Muslim 2588</footer>
-          </blockquote>
+          <div className="sadaqah__header-top">
+            <div className="sadaqah__header-text">
+              <h1 className="sadaqah__title">Monetary Sadaqah</h1>
+              <p className="sadaqah__lede">Log donations and see them by cause.</p>
+            </div>
+            <button type="button" className="sadaqah__reset" onClick={handleReset}>
+              Start over
+            </button>
+          </div>
         </header>
 
-        <div
-          role="region"
-          aria-labelledby="sadaqah-goal-heading"
-          style={{
-            marginBottom: "1.5rem",
-            background: "#42501F",
-            borderRadius: 12,
-            padding: 20,
-          }}
-        >
-          <h2
-            id="sadaqah-goal-heading"
-            style={{
-              margin: 0,
-              color: "#E5D3AD",
-              fontWeight: "bold",
-              fontSize: "1rem",
-            }}
-          >
+        <section className="sadaqah__section" aria-labelledby="sadaqah-form-heading">
+          <h2 id="sadaqah-form-heading" className="sadaqah__h2">
+            Log a donation
+          </h2>
+          <form className="sadaqah__form" onSubmit={logDonation}>
+            <label className="sadaqah__label">
+              <span className="sadaqah__label-text">Who did you donate to?</span>
+              <input
+                className="sadaqah__input"
+                type="text"
+                value={cause}
+                onChange={(ev) => setCause(ev.target.value)}
+                placeholder="Organization or cause"
+                autoComplete="organization"
+              />
+            </label>
+            <label className="sadaqah__label">
+              <span className="sadaqah__label-text">How much? ($)</span>
+              <input
+                className="sadaqah__input"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                step="1"
+                value={amount}
+                onChange={handleAmountChange}
+                onKeyDown={handleAmountKeyDown}
+                onBlur={handleAmountBlur}
+                placeholder="0"
+              />
+            </label>
+            <label className="sadaqah__label">
+              <span className="sadaqah__label-text">Date</span>
+              <input
+                className="sadaqah__input"
+                type="date"
+                value={date}
+                onChange={(ev) => setDate(ev.target.value)}
+              />
+            </label>
+            <button type="submit" className="sadaqah__submit">
+              Log donation
+            </button>
+          </form>
+        </section>
+
+        <section className="sadaqah__section" aria-labelledby="sadaqah-goal-heading">
+          <h2 id="sadaqah-goal-heading" className="sadaqah__h2">
             This month&apos;s goal
           </h2>
-          {monthGoalProgress.goalAmount == null ? (
-            <p style={{ margin: "12px 0 0", color: "#B7933F", fontSize: 14 }}>
-              No goal set yet.
+          {goalAmount == null ? (
+            <p className="sadaqah__muted">
+              Set <code className="sadaqah__code">{GOAL_KEY}</code> in localStorage
+              (for example <code className="sadaqah__code">$500</code> or{" "}
+              <code className="sadaqah__code">Donate $250 this month</code>) to see
+              progress.
             </p>
           ) : (
             <>
-              <p
-                style={{
-                  margin: "10px 0 16px",
-                  color: "#E5D3AD",
-                  fontSize: 14,
-                  opacity: 0.95,
-                }}
-              >
-                ${monthGoalProgress.totalDonated} donated of $
-                {monthGoalProgress.goalAmount} goal
+              <p className="sadaqah__goal-line">
+                <strong>${Math.round(monthTotal)}</strong>
+                <span className="sadaqah__goal-sep"> / </span>
+                <span>${Math.round(goalAmount)}</span>
+                {overGoal ? (
+                  <span className="sadaqah__badge">Above goal</span>
+                ) : null}
               </p>
               <div
+                className="sadaqah__progress"
                 role="progressbar"
                 aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(monthGoalProgress.percent)}
-                aria-label="Progress toward donation goal"
-                style={{
-                  width: "100%",
-                  height: 12,
-                  background: "#7D7E3C",
-                  borderRadius: 99,
-                  overflow: "hidden",
-                }}
+                aria-valuemax={goalAmount}
+                aria-valuenow={Math.min(monthTotal, goalAmount)}
+                aria-label="Progress toward monthly donation goal"
               >
                 <div
+                  className="sadaqah__progress-fill"
                   style={{
-                    width: `${monthGoalProgress.percent}%`,
-                    height: "100%",
-                    background: "#B7933F",
-                    borderRadius: 99,
-                    transition: "width 0.4s ease",
+                    width: `${goalAmount > 0 ? Math.min((monthTotal / goalAmount) * 100, 100) : 0}%`,
                   }}
                 />
               </div>
-              <p
-                style={{
-                  margin: "6px 0 0",
-                  color: "#B7933F",
-                  fontSize: 13,
-                }}
-              >
-                {Math.round(monthGoalProgress.percent)}% complete
-              </p>
             </>
           )}
-        </div>
+        </section>
 
         <section className="sadaqah__section" aria-labelledby="sadaqah-chart-heading">
           <h2 id="sadaqah-chart-heading" className="sadaqah__h2">
@@ -465,7 +493,17 @@ export default function Sadaqah() {
                 if (logDonation(ev)) setDonationSheetOpen(false);
               }}
             >
-              <CauseSelect value={cause} onChange={setCause} />
+              <label className="sadaqah__label">
+                <span className="sadaqah__label-text">Who did you donate to?</span>
+                <input
+                  className="sadaqah__input"
+                  type="text"
+                  value={cause}
+                  onChange={(ev) => setCause(ev.target.value)}
+                  placeholder="Organization or cause"
+                  autoComplete="organization"
+                />
+              </label>
               <label className="sadaqah__label">
                 <span className="sadaqah__label-text">How much? ($)</span>
                 <input
