@@ -19,7 +19,7 @@ Sincerity is a sadaqah tracking app that helps Muslims plan, track, and grow the
 - **Personalized onboarding** — 3 paths based on your situation, with AI-generated sadaqah suggestions powered by Claude
 - **Living plant** — grows from a sprout to 7 leaves (Quran 2:261), wilts if you go idle, resets each month
 - **Monetary sadaqah tracker** — log donations, track goals, visualize causes
-- **Hasanat tracker** — log non-monetary acts by category, Leetcode-style activity heatmap, streak counter
+- **Hasanat tracker** — log non-monetary acts by category, streak counter
 - **Email notifications** — reminder emails when your plant starts to wilt
 
 ---
